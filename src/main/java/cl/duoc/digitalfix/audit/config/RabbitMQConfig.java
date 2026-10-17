@@ -46,4 +46,10 @@ public class RabbitMQConfig {
     public Binding auditoriaBinding(Queue auditoriaQueue, TopicExchange negocioExchange) {
         return BindingBuilder.bind(auditoriaQueue).to(negocioExchange).with(routingKey);
     }
+
+    // Administrador para poder consultar el estado y profundidad de las colas
+    @Bean
+    public org.springframework.amqp.rabbit.core.RabbitAdmin rabbitAdmin(org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory) {
+        return new org.springframework.amqp.rabbit.core.RabbitAdmin(connectionFactory);
+    }
 }

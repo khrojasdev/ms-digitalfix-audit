@@ -5,6 +5,7 @@ import cl.duoc.digitalfix.audit.config.ContextoEmpresaHolder;
 import cl.duoc.digitalfix.audit.domain.AuditEvent;
 import cl.duoc.digitalfix.audit.error.AccesoDenegado;
 import cl.duoc.digitalfix.audit.service.AuditQueryService;
+import cl.duoc.digitalfix.audit.service.MonitoreoService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,15 +13,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/audit")
 public class AuditController {
 
     private final AuditQueryService queryService;
+    private final MonitoreoService monitoreoService;
 
-    public AuditController(AuditQueryService queryService) {
+    public AuditController(AuditQueryService queryService, MonitoreoService monitoreoService) {
         this.queryService = queryService;
+        this.monitoreoService = monitoreoService;
     }
 
     @GetMapping("/events")
@@ -44,5 +48,26 @@ public class AuditController {
         );
 
         return ResponseEntity.ok(resultado);
+    }
+
+    @GetMapping("/lag")
+    public ResponseEntity<Map<String, Object>> obtenerRezago() {
+        ContextoEmpresa contexto = ContextoEmpresaHolder.obtener()
+                .orElseThrow(() -> new AccesoDenegado("Falta la cabecera de empresa"));
+
+        // Validar explícitamente que el usuario sea ADMIN para ver el estado interno
+        boolean esAdmin = contexto.roles() != null && contexto.roles().stream()
+                .anyMatch(r -> r.equalsIgnoreCase("ADMIN") || r.equalsIgnoreCase("ROLE_ADMIN"));
+
+        if (!esAdmin) {
+            throw new AccesoDenegado("Acceso restringido exclusivamente al rol ADMIN");
+        }
+
+        int rezago = monitoreoService.obtenerRezagoAuditoria();
+        return ResponseEntity.ok(Map.of(
+                "componente", "ms-digitalfix-audit",
+                "mensajesPendientes", rezago,
+                "estado", rezago == -1 ? "CAIDO" : (rezago >= 100 ? "DEGRADADO" : "OPERATIVO")
+        ));
     }
 }
