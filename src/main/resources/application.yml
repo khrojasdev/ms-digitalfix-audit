@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: ms-digitalfix-audit
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@//localhost:1521/XEPDB1}
+    username: ${SPRING_DATASOURCE_USERNAME:DFX_AUDIT}
+    password: ${ORACLE_AUDIT_PASSWORD:digitalfix}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      pool-name: audit-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    clean-disabled: true
+    locations: classpath:db/migration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+
+amqp:
+  exchange:
+    negocio: ordenes.negocio.exchange
+  queue:
+    auditoria: ordenes.auditoria.queue
+    auditoria-dlq: ordenes.auditoria.dlq
+  routing-key:
+    auditoria: ordenes.eventos.*
+
+server:
+  port: ${PUERTO:8086}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlacion:-sin-correlacion}] %logger{36} - %msg%n"
