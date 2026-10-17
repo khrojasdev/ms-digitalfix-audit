@@ -29,17 +29,20 @@ public class AuditEvent {
     @Column(name = "correlacion_id", nullable = false)
     private String correlacionId;
 
-    // Constructor vacío exigido por JPA
+    // Nueva clave de idempotencia
+    @Column(name = "event_key", unique = true)
+    private String eventKey;
+
     public AuditEvent() {}
 
-    // Constructor con parámetros
-    public AuditEvent(String tipoEvento, Long ordenId, String autorId, Long empresaId, LocalDateTime fecha, String correlacionId) {
+    public AuditEvent(String tipoEvento, Long ordenId, String autorId, Long empresaId, LocalDateTime fecha, String correlacionId, String eventKey) {
         this.tipoEvento = tipoEvento;
         this.ordenId = ordenId;
         this.autorId = autorId;
         this.empresaId = empresaId;
         this.fecha = fecha;
         this.correlacionId = correlacionId;
+        this.eventKey = eventKey;
     }
 
     // Getters
@@ -50,6 +53,7 @@ public class AuditEvent {
     public Long getEmpresaId() { return empresaId; }
     public LocalDateTime getFecha() { return fecha; }
     public String getCorrelacionId() { return correlacionId; }
+    public String getEventKey() { return eventKey; }
 
     // Setters
     public void setId(Long id) { this.id = id; }
@@ -59,4 +63,5 @@ public class AuditEvent {
     public void setEmpresaId(Long empresaId) { this.empresaId = empresaId; }
     public void setFecha(LocalDateTime fecha) { this.fecha = fecha; }
     public void setCorrelacionId(String correlacionId) { this.correlacionId = correlacionId; }
+    public void setEventKey(String eventKey) { this.eventKey = eventKey; }
 }
