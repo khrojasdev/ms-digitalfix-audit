@@ -2,7 +2,6 @@ package cl.duoc.digitalfix.audit.domain;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Immutable;
-
 import java.time.LocalDateTime;
 
 @Entity
