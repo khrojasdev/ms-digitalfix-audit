@@ -32,11 +32,20 @@ spring:
 amqp:
   exchange:
     negocio: ordenes.negocio.exchange
+    usuarios: usuarios.negocio.exchange
   queue:
     auditoria: ordenes.auditoria.queue
     auditoria-dlq: ordenes.auditoria.dlq
+    usuarios: usuarios.auditoria.queue
+    usuarios-dlq: usuarios.auditoria.dlq
   routing-key:
     auditoria: ordenes.eventos.*
+    usuarios: usuarios.eventos.#
+  # Fallas transitorias (base de datos o red): cuantas veces se intenta y la
+  # espera inicial, que se duplica en cada intento. Ver ProcesadorDeMensajes.
+  reintentos:
+    maximo: 3
+    espera-ms: 1000
 
 server:
   port: ${PUERTO:8086}
