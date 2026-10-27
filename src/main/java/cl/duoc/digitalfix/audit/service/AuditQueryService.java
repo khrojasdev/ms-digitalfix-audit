@@ -22,6 +22,12 @@ public class AuditQueryService {
     }
 
     public Page<AuditEvent> buscarEventos(Long empresaId, String autorId, String tipoEvento, LocalDateTime desde, LocalDateTime hasta, Pageable pageable) {
+        return buscarEventos(empresaId, autorId, tipoEvento, null, desde, hasta, pageable);
+    }
+
+    /** Igual que el anterior, y con ordenId arma el timeline de una orden. */
+    public Page<AuditEvent> buscarEventos(Long empresaId, String autorId, String tipoEvento, Long ordenId,
+                                          LocalDateTime desde, LocalDateTime hasta, Pageable pageable) {
         Specification<AuditEvent> spec = (root, query, cb) -> {
             List<Predicate> predicados = new ArrayList<>();
 
@@ -34,6 +40,9 @@ public class AuditQueryService {
             }
             if (tipoEvento != null && !tipoEvento.isBlank()) {
                 predicados.add(cb.equal(root.get("tipoEvento"), tipoEvento));
+            }
+            if (ordenId != null) {
+                predicados.add(cb.equal(root.get("ordenId"), ordenId));
             }
             if (desde != null) {
                 predicados.add(cb.greaterThanOrEqualTo(root.get("fecha"), desde));
