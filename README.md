@@ -11,7 +11,52 @@ Auditoria: bitacora inmutable de eventos de negocio para trazabilidad y cumplimi
 
 ## Tecnologias
 
-Spring Boot 3, Kafka, Spring Data JPA, Oracle
+Spring Boot 3, RabbitMQ (Spring AMQP), Spring Data JPA, Oracle, Flyway
+
+## Mensajeria (RabbitMQ)
+
+Dos rutas, cada una con su cola y su DLQ. Los nombres viven en `application.yml`
+(`amqp.*`) y los beans en `config/RabbitMQConfig`.
+
+| Ruta | Exchange (topic) | Routing key | Cola | DLQ | Consumidor |
+|---|---|---|---|---|---|
+| Ordenes | `ordenes.negocio.exchange` | `ordenes.eventos.*` | `ordenes.auditoria.queue` | `ordenes.auditoria.dlq` | `mensajeria.ordenes.AuditEventoConsumer` |
+| Usuarios | `usuarios.negocio.exchange` | `usuarios.eventos.#` | `usuarios.auditoria.queue` | `usuarios.auditoria.dlq` | `mensajeria.usuarios.UsuarioEventoConsumer` |
+
+### Confirmacion y errores (`mensajeria.ProcesadorDeMensajes`)
+
+| Situacion | Decision |
+|---|---|
+| Se guardo el evento | `ACK` |
+| Mensaje invalido (JSON ilegible o le falta orden, autor o empresa) | `NACK` sin reencolar: a la DLQ de inmediato |
+| Falla transitoria (base de datos o red caida un momento) | Reintento hasta `amqp.reintentos.maximo` veces (1 s, 2 s, 4 s...); si persiste, `NACK` a la DLQ |
+| Cualquier otro error | `NACK` sin reencolar: a la DLQ |
+
+Nunca se reencola sin control, y todo lo que va a la DLQ queda en el log con la
+cola y el motivo. Un evento repetido (misma `eventKey`) se ignora: la bitacora
+es idempotente.
+
+## API
+
+`GET /api/audit/events` (solo ADMIN y AUDITOR, siempre de la empresa de quien consulta)
+
+| Parametro | Uso |
+|---|---|
+| `ordenId` | Timeline de una orden |
+| `autorId` | Eventos de una persona (oid) |
+| `tipoEvento` | `CREADA`, `ASIGNADA`, ..., `USUARIO_CREADO`, `USUARIO_ROL_CAMBIADO`... |
+| `desde`, `hasta` | Rango de fechas (ISO) |
+| `page`, `size`, `sort` | Paginacion, p.ej. `sort=fecha,desc` |
+
+Cada evento trae `detalle` con el texto legible: tecnico asignado, comentario del
+cambio de estado o correo y rol del usuario.
+
+`GET /api/audit/lag` (solo ADMIN): mensajes pendientes en la cola de auditoria.
+
+## Pruebas
+
+`./mvnw test` (H2 en memoria, sin Oracle ni RabbitMQ): politica de ACK/reintento/DLQ,
+consumidores de ordenes y usuarios, timeline por orden, idempotencia y acceso por rol.
 
 ## Integrantes
 
@@ -32,13 +77,6 @@ Spring Boot 3, Kafka, Spring Data JPA, Oracle
 - [`ms-digitalfix-report`](https://github.com/khrojasdev/ms-digitalfix-report) - Microservicio
 - [`ms-digitalfix-audit`](https://github.com/khrojasdev/ms-digitalfix-audit) - Microservicio **(este)**
 - [`digitalfix-infra`](https://github.com/khrojasdev/digitalfix-infra) - Infraestructura
-
-## Pendiente por definir
-
-El documento del caso pide ademas *un microservicio administrador de RabbitMQ y otro de
-Kafka, segun la pauta de cada evaluacion*. Ni la EP1 ni la EP2 los evaluan, asi que no
-existen todavia como repositorios. Cuando la pauta de la evaluacion final los exija se
-agregaran como `ms-digitalfix-rabbit` y `ms-digitalfix-kafka`. La decision del equipo fue esperar la pauta.
 
 ## Tablero
 
