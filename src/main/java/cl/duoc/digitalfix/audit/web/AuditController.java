@@ -31,6 +31,7 @@ public class AuditController {
     public ResponseEntity<Page<AuditEvent>> obtenerEventos(
             @RequestParam(required = false) String autorId,
             @RequestParam(required = false) String tipoEvento,
+            @RequestParam(required = false) Long ordenId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta,
             Pageable pageable
@@ -44,7 +45,7 @@ public class AuditController {
         }
 
         Page<AuditEvent> resultado = queryService.buscarEventos(
-                contexto.companyId(), autorId, tipoEvento, desde, hasta, pageable
+                contexto.companyId(), autorId, tipoEvento, ordenId, desde, hasta, pageable
         );
 
         return ResponseEntity.ok(resultado);
